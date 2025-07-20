@@ -11,6 +11,7 @@ interface ProgressBarForwardRefProps {
 	onSeek?: OnSeek;
 	onChangeCurrentTimeError?: (err: Error) => void;
 	i18nProgressBar: string;
+	isReceived?: boolean;
 }
 interface ProgressBarProps extends ProgressBarForwardRefProps {
 	progressBar: React.RefObject<HTMLDivElement>;
@@ -261,7 +262,8 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
 			showDownloadProgress,
 			showFilledProgress,
 			progressBar,
-			i18nProgressBar
+			i18nProgressBar,
+			isReceived = true
 		} = this.props;
 		const {
 			currentTimePos,
@@ -269,49 +271,81 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState> {
 			hasDownloadProgressAnimation
 		} = this.state;
 
+		// Generate waveform bars with predefined heights for consistent look
+		const waveformHeights = [
+			8, 12, 6, 14, 10, 16, 8, 12, 15, 9, 11, 7, 13, 18, 10, 6, 14, 12, 8, 16,
+			11, 9, 15, 7, 13, 10, 12, 8, 14, 16, 9, 11, 6, 15, 12, 10, 8, 13, 7, 14
+		];
+
+		// Colors based on message type
+		const playedColor = isReceived ? 'bg-blue-400' : 'bg-white';
+		const unplayedColor = isReceived ? 'bg-green-300' : 'bg-blue-200';
+
+		const waveformBars = Array.from({ length: 40 }, (_, index) => {
+			const height = waveformHeights[index] || 10;
+			const currentProgress = currentTimePos
+				? parseFloat(currentTimePos.replace('%', ''))
+				: 0;
+			const barProgress = (index / 40) * 100;
+			const isPlayed = currentProgress > barProgress;
+
+			return (
+				<div
+					key={index}
+					className={`w-0.5 rounded-sm transition-colors duration-200 ${
+						isPlayed ? playedColor : unplayedColor
+					}`}
+					style={{ height: `${height}px` }}
+				/>
+			);
+		});
+
 		return (
 			<div
-				className="rhap_progress-container"
+				className="relative flex h-8 cursor-pointer items-center justify-center px-2"
 				ref={progressBar}
 				aria-label={i18nProgressBar}
 				role="progressbar"
 				aria-valuemin={0}
 				aria-valuemax={100}
-				// @ts-expect-error currentTimePos is possibly undefined
-				aria-valuenow={Number(currentTimePos.split('%')[0])}
+				aria-valuenow={
+					currentTimePos ? Number(currentTimePos.split('%')[0]) : 0
+				}
 				tabIndex={0}
 				onMouseDown={this.handleMouseDownOrTouchStartProgressBar}
 				onTouchStart={this.handleMouseDownOrTouchStartProgressBar}
 				onContextMenu={this.handleContextMenu}
 			>
-				<div
-					className={`rhap_progress-bar ${showDownloadProgress ? 'rhap_progress-bar-show-download' : ''}`}
-				>
-					<div
-						className="rhap_progress-indicator"
-						style={{ left: currentTimePos }}
-					/>
-					{showFilledProgress && (
+				{/* Waveform visualization */}
+				<div className="relative flex w-full items-center justify-center gap-1">
+					{waveformBars}
+
+					{/* Progress indicator dot */}
+					{currentTimePos && (
 						<div
-							className="rhap_progress-filled"
-							style={{ width: currentTimePos }}
+							className="absolute h-2.5 w-2.5 rounded-full border border-white bg-blue-500 shadow-lg"
+							style={{
+								left: currentTimePos,
+								top: '50%',
+								transform: 'translate(-50%, -50%)'
+							}}
 						/>
 					)}
-					{showDownloadProgress &&
-						downloadProgressArr.map(({ left, width }, i) => (
-							<div
-								key={i}
-								className="rhap_download-progress"
-								style={{
-									left,
-									width,
-									transitionDuration: hasDownloadProgressAnimation
-										? '.2s'
-										: '0s'
-								}}
-							/>
-						))}
 				</div>
+
+				{/* Download progress bars (hidden in mobile/WhatsApp style) */}
+				{showDownloadProgress &&
+					downloadProgressArr.map(({ left, width }, i) => (
+						<div
+							key={i}
+							className="absolute h-full bg-gray-400 opacity-50"
+							style={{
+								left,
+								width,
+								transitionDuration: hasDownloadProgressAnimation ? '.2s' : '0s'
+							}}
+						/>
+					))}
 			</div>
 		);
 	}

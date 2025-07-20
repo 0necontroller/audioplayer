@@ -49,6 +49,18 @@ interface PlayerProps {
 	 */
 	className?: string;
 	/**
+	 * WhatsApp style - whether this is a received message (true) or sent message (false)
+	 */
+	isReceived?: boolean;
+	/**
+	 * Show playback speed indicator (e.g., "1x", "1.5x")
+	 */
+	showSpeedIndicator?: boolean;
+	/**
+	 * Current playback speed
+	 */
+	playbackSpeed?: number;
+	/**
 	 * The time interval to trigger onListen
 	 */
 	listenInterval?: number;
@@ -425,6 +437,7 @@ class H5AudioPlayer extends Component<PlayerProps> {
 						onChangeCurrentTimeError={onChangeCurrentTimeError}
 						srcDuration={mse && mse.srcDuration}
 						i18nProgressBar={i18nAriaLabels.progressControl || ''}
+						isReceived={this.props.isReceived}
 					/>
 				);
 			case RHAP_UI.DURATION:
@@ -458,84 +471,25 @@ class H5AudioPlayer extends Component<PlayerProps> {
 					actionIcon = customIcons.pause ? (
 						customIcons.pause
 					) : (
-						<Icon icon="mdi:pause-circle" />
+						<Icon icon="mdi:pause" className="text-2xl text-gray-200" />
 					);
 				} else {
 					actionIcon = customIcons.play ? (
 						customIcons.play
 					) : (
-						<Icon icon="mdi:play-circle" />
+						<Icon icon="mdi:play" className="text-2xl text-gray-200" />
 					);
 				}
 				return (
-					<div key={key} className="rhap_main-controls">
-						{showSkipControls && (
-							<button
-								aria-label={i18nAriaLabels.previous}
-								className="rhap_button-clear rhap_main-controls-button rhap_skip-button"
-								type="button"
-								onClick={onClickPrevious}
-							>
-								{customIcons.previous ? (
-									customIcons.previous
-								) : (
-									<Icon icon="mdi:skip-previous" />
-								)}
-							</button>
-						)}
-						{showJumpControls && (
-							<button
-								aria-label={i18nAriaLabels.rewind}
-								className="rhap_button-clear rhap_main-controls-button rhap_rewind-button"
-								type="button"
-								onClick={this.handleClickRewind}
-							>
-								{customIcons.rewind ? (
-									customIcons.rewind
-								) : (
-									<Icon icon="mdi:rewind" />
-								)}
-							</button>
-						)}
-						<button
-							aria-label={
-								isPlaying ? i18nAriaLabels.pause : i18nAriaLabels.play
-							}
-							className="rhap_button-clear rhap_main-controls-button rhap_play-pause-button"
-							type="button"
-							onClick={this.togglePlay}
-						>
-							{actionIcon}
-						</button>
-						{showJumpControls && (
-							<button
-								aria-label={i18nAriaLabels.forward}
-								className="rhap_button-clear rhap_main-controls-button rhap_forward-button"
-								type="button"
-								onClick={this.handleClickForward}
-							>
-								{customIcons.forward ? (
-									customIcons.forward
-								) : (
-									<Icon icon="mdi:fast-forward" />
-								)}
-							</button>
-						)}
-						{showSkipControls && (
-							<button
-								aria-label={i18nAriaLabels.next}
-								className="rhap_button-clear rhap_main-controls-button rhap_skip-button"
-								type="button"
-								onClick={onClickNext}
-							>
-								{customIcons.next ? (
-									customIcons.next
-								) : (
-									<Icon icon="mdi:skip-next" />
-								)}
-							</button>
-						)}
-					</div>
+					<button
+						key={key}
+						aria-label={isPlaying ? i18nAriaLabels.pause : i18nAriaLabels.play}
+						className="flex cursor-pointer items-center justify-center border-none bg-transparent p-1"
+						type="button"
+						onClick={this.togglePlay}
+					>
+						{actionIcon}
+					</button>
 				);
 			}
 			case RHAP_UI.VOLUME_CONTROLS:
@@ -760,19 +714,14 @@ class H5AudioPlayer extends Component<PlayerProps> {
 			mediaGroup,
 			header,
 			footer,
-			layout = 'stacked',
-			customProgressBarSection = [
-				RHAP_UI.CURRENT_TIME,
-				RHAP_UI.PROGRESS_BAR,
-				RHAP_UI.DURATION
-			],
-			customControlsSection = [
-				RHAP_UI.ADDITIONAL_CONTROLS,
-				RHAP_UI.MAIN_CONTROLS,
-				RHAP_UI.VOLUME_CONTROLS
-			],
+			layout = 'horizontal',
+			customProgressBarSection = [RHAP_UI.PROGRESS_BAR],
+			customControlsSection = [RHAP_UI.MAIN_CONTROLS],
 			children,
 			style,
+			isReceived = true,
+			showSpeedIndicator = false,
+			playbackSpeed = 1,
 			i18nAriaLabels = H5AudioPlayer.defaultI18nAriaLabels
 		} = this.props;
 		const loop = this.audio.current ? this.audio.current.loop : loopProp;
@@ -780,6 +729,12 @@ class H5AudioPlayer extends Component<PlayerProps> {
 		const isPlayingClass = this.isPlaying()
 			? 'rhap_play-status--playing'
 			: 'rhap_play-status--paused';
+
+		// Different styling for received vs sent messages
+		const containerBg = isReceived ? 'bg-green-700' : 'bg-blue-600';
+		const waveformColors = isReceived
+			? { played: 'bg-blue-400', unplayed: 'bg-green-300' }
+			: { played: 'bg-white', unplayed: 'bg-blue-200' };
 
 		return (
 			/* We want the container to catch bubbled events */
@@ -789,7 +744,7 @@ class H5AudioPlayer extends Component<PlayerProps> {
 				/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */
 				tabIndex={0}
 				aria-label={i18nAriaLabels.player}
-				className={`rhap_container ${loopClass} ${isPlayingClass} ${className}`}
+				className={`${containerBg} flex max-w-sm items-center space-x-3 rounded-lg p-3 ${loopClass} ${isPlayingClass} ${className}`}
 				onKeyDown={this.handleKeyDown}
 				ref={this.container}
 				style={style}
@@ -808,15 +763,34 @@ class H5AudioPlayer extends Component<PlayerProps> {
 				>
 					{children}
 				</audio>
-				{header && <div className="rhap_header">{header}</div>}
-				<div className={`rhap_main ${getMainLayoutClassName(layout)}`}>
-					<div className="rhap_progress-section">
+
+				{/* Play/Pause Button */}
+				<div className="flex flex-shrink-0 items-center space-x-2">
+					{showSpeedIndicator && (
+						<div className="bg-opacity-30 rounded-full bg-black px-2 py-1">
+							<span className="text-xs font-medium text-white">
+								{playbackSpeed}x
+							</span>
+						</div>
+					)}
+					{this.renderUIModules(customControlsSection)}
+				</div>
+
+				{/* Waveform and Duration on same row */}
+				<div className="flex flex-1 items-center space-x-3">
+					<div className="flex-1">
 						{this.renderUIModules(customProgressBarSection)}
 					</div>
-					<div className="rhap_controls-section">
-						{this.renderUIModules(customControlsSection)}
+					<div className="flex-shrink-0 text-xs text-gray-200">
+						<Duration
+							audio={this.audio.current || undefined}
+							defaultDuration="0:00"
+							timeFormat="auto"
+						/>
 					</div>
 				</div>
+
+				{header && <div className="rhap_header">{header}</div>}
 				{footer && <div className="rhap_footer">{footer}</div>}
 			</div>
 		);
