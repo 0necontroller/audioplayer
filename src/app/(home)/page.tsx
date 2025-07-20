@@ -1,6 +1,6 @@
 'use client';
 
-import H5AudioPlayer from '@/audio';
+import H5AudioPlayer, { RoundAudioPlayer } from '@/audio';
 import MyCookieConsent from '@/hooks/use-cookie-consent';
 
 export default function Home() {
@@ -24,6 +24,13 @@ export default function Home() {
 						volume={0.5}
 						isReceived={true}
 					/>
+
+					<div className="bg-amber-500 p-12">
+						<RoundAudioPlayer
+							src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"
+							volume={0.5}
+						/>
+					</div>
 				</div>
 			</main>
 		</>

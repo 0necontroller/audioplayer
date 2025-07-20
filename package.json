@@ -27,6 +27,7 @@
     "eslint-plugin-next": "^0.0.0",
     "eslint-plugin-prettier": "^5.2.3",
     "lucide-react": "^0.475.0",
+    "motion": "^12.23.6",
     "next": "15.3.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "react": "19.1.0",

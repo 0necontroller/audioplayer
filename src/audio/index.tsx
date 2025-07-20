@@ -800,3 +800,4 @@ class H5AudioPlayer extends Component<PlayerProps> {
 export default H5AudioPlayer;
 export { RHAP_UI };
 export type { OnSeek };
+export { RoundAudioPlayer } from './round-audio';
