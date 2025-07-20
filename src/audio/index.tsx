@@ -177,9 +177,9 @@ class H5AudioPlayer extends Component<PlayerProps> {
 
 	listenTracker?: number; // Determine whether onListen event should be called continuously
 
-	volumeAnimationTimer?: number;
+	volumeAnimationTimer?: NodeJS.Timeout;
 
-	downloadProgressAnimationTimer?: number;
+	downloadProgressAnimationTimer?: NodeJS.Timeout;
 
 	togglePlay = (e: React.SyntheticEvent): void => {
 		e.stopPropagation();
